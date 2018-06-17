@@ -2,7 +2,7 @@ FROM golang:latest
 
 ENV GOBIN /go/bin
 
-WORKDIR /go/src/todo
+WORKDIR /go/src/github.com/ianbruce/todo
 COPY . .
 
 RUN go get -d -v ./...
