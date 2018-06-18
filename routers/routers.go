@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/ianbruce/todo/middleware"
 	"github.com/ianbruce/todo/handlers"
+	"github.com/ianbruce/todo/injects"
+
 )
 
 type Route struct {
@@ -17,63 +18,62 @@ type Route struct {
 
 type Routes []Route
 
-func NewRouter() *mux.Router {
-	router	 := mux.NewRouter().StrictSlash(true)
-	for _, route := range myRoutes {
-		var handler http.Handler
-		handler = route.HandlerFunc
-		handler = middleware.Logger(handler, route.Name)
 
+func NewRouter(appCtx injects.AppContainer) *mux.Router {
+	router	 := mux.NewRouter().StrictSlash(true)
+	for _, route := range createRoutes(appCtx) {
 		router.
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(handler)
+			Handler(route.HandlerFunc)
 	}
 
 	return router
 }
 
-var myRoutes = Routes{
-	Route{
-		"Index",
-		"GET",
-		"/",
-		handlers.Index,
-	},
+func createRoutes(appCtx injects.AppContainer) Routes {
+	return Routes{
+		Route{
+			"Index",
+			"GET",
+			"/",
+			handlers.Index(&appCtx),
+		},
 
-	Route{
-		"AddList",
-		"POST",
-		"/lists",
-		handlers.AddList,
-	},
+		Route{
+			"AddList",
+			"POST",
+			"/lists",
+			handlers.AddList(&appCtx),
+		},
 
-	Route{
-		"AddTask",
-		"POST",
-		"/list/{id}/tasks",
-		handlers.AddTask,
-	},
+		Route{
+			"AddTask",
+			"POST",
+			"/list/{id}/tasks",
+			handlers.AddTask(&appCtx),
+		},
 
-	Route{
-		"GetList",
-		"GET",
-		"/list/{id}",
-		handlers.GetList,
-	},
+		Route{
+			"GetList",
+			"GET",
+			"/list/{id}",
+			handlers.GetList(&appCtx),
+		},
 
-	Route{
-		"PutTask",
-		"POST",
-		"/list/{id}/task/{taskId}/complete",
-		handlers.PutTask,
-	},
+		Route{
+			"PutTask",
+			"POST",
+			"/list/{id}/task/{taskId}/complete",
+			handlers.PutTask(&appCtx),
+		},
 
-	Route{
-		"SearchLists",
-		"GET",
-		"/lists",
-		handlers.SearchLists,
-	},
+		Route{
+			"SearchLists",
+			"GET",
+			"/lists",
+			handlers.SearchLists(&appCtx),
+		},
+	}
 }
