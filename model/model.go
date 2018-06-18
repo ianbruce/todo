@@ -1,22 +1,14 @@
 package model
 
-import (
-  "database/sql"
-)
-
-type Model struct {
-  store *sql.DB
-}
-
 type Task struct {
-	id           string `db: "id"`
-	name         string `db: "name"`
-	completed    bool   `db: "completed"`
+	ID           string `dynamodbav:"taskID"`
+	Name         string `dynamodbav:"taskName"`
+	Completed    bool   `dynamodbav:"taskCompleted"`
 }
 
 type TodoList struct {
-	id           string `db: "id"`
-	name         string `db: "name"`
-	description  string `db: "description"`
-	tasks        []Task `db: "tasks"`
+	ID           string `dynamodbav:"listID"`
+	Name         string `dynamodbav:"listName"`
+	Description  string `dynamodbav:"listDescription"`
+	Tasks        []Task `dynamodbav:"tasks"`
 }
