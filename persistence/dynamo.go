@@ -15,7 +15,7 @@ type DynamoTodo struct {
   TableName string
 }
 
-func (service *DynamoTodo) GetList(id string) model.TodoList {
+func (service *DynamoTodo) GetList(id string) (model.TodoList, error) {
   var returnList model.TodoList
 
   dbInput := &dynamodb.GetItemInput{
@@ -27,59 +27,76 @@ func (service *DynamoTodo) GetList(id string) model.TodoList {
     TableName: aws.String(service.TableName),
   }
 
-  resp, _ := service.DB.GetItem(dbInput)
+  resp, getErr := service.DB.GetItem(dbInput)
 
-  dynamodbattribute.UnmarshalMap(resp.Item, &returnList)
-
-  return returnList
-}
-
-func (service *DynamoTodo) GetLists(query string, limit int) []model.TodoList {
-  var returnList []model.TodoList
-
-  service.DB.ScanPages(&dynamodb.ScanInput{
-      TableName: aws.String(service.TableName),
-    }, func(page *dynamodb.ScanOutput, last bool) bool {
-        lists := []model.TodoList{}
-
-        err := dynamodbattribute.UnmarshalListOfMaps(page.Items, &lists)
-
-        if err != nil {
-             panic(fmt.Sprintf("failed to unmarshal Dynamodb Scan Items, %v", err))
-        }
-
-        returnList = append(returnList, lists...)
-
-        return true // keep paging
-      },
-  )
-
-  return returnList
-}
-
-func (service *DynamoTodo) CreateList(list model.TodoList) {
-  av, err := dynamodbattribute.MarshalMap(list)
-
-  if err != nil {
-      panic(fmt.Sprintf("failed to DynamoDB marshal list, %v", err))
+  if getErr != nil {
+    return returnList, getErr
   }
 
-  _, err = service.DB.PutItem(&dynamodb.PutItemInput{
+  unmarshalErr := dynamodbattribute.UnmarshalMap(resp.Item, &returnList)
+
+  return returnList, unmarshalErr
+}
+
+func (service *DynamoTodo) GetLists(query string, limit int) ([]model.TodoList, error) {
+  var returnList []model.TodoList
+  queryInput := &dynamodb.QueryInput{
+    TableName: aws.String(service.TableName),
+  }
+
+  queryInput = queryInput.SetExpressionAttributeValues(map[string]*dynamodb.AttributeValue{
+    ":prefix": {
+        S: aws.String(query),
+    },
+  })
+
+  queryInput = queryInput.SetKeyConditionExpression("begins_with(listID, :prefix)")
+
+  fmt.Println(queryInput)
+
+  lists, queryErr := service.DB.Query(queryInput)
+
+  if queryErr != nil {
+    return returnList, queryErr
+  }
+
+  unmarshalErr := dynamodbattribute.UnmarshalListOfMaps(lists.Items, &returnList)
+
+  return returnList, unmarshalErr
+}
+
+func (service *DynamoTodo) CreateList(list model.TodoList) error {
+  av, marhsalErr := dynamodbattribute.MarshalMap(list)
+
+  if marhsalErr != nil {
+    return marhsalErr
+  }
+
+  _, putErr := service.DB.PutItem(&dynamodb.PutItemInput{
       TableName: aws.String(service.TableName),
       Item:      av,
   })
 
-  if err != nil {
-      panic(fmt.Sprintf("failed to put list to DynamoDB, %v", err))
-  }
+  return putErr
 }
 
-func (service *DynamoTodo) CreateTask(listId string, task model.Task) {
+// TODO: implement CreateTask
+func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
+  _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
+      Key: map[string]*dynamodb.AttributeValue{
+          "listID": {
+              S: aws.String(listId),
+          },
+      },
+      TableName: aws.String(service.TableName),
+    },
+  )
 
+  return updateErr
 }
 
-func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) {
-  _, err := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
+func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) error {
+  _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
       Key: map[string]*dynamodb.AttributeValue{
           "listID": {
               S: aws.String(listId),
@@ -92,7 +109,5 @@ func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) {
     },
   )
 
-  if err != nil {
-    panic(fmt.Sprintf("couldn't update task %s completion status!", taskId))
-  }
+  return updateErr
 }
