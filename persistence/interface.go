@@ -5,9 +5,9 @@ import (
 )
 
 type TodoDatabase interface {
-  GetList(id string) model.TodoList
-  GetLists(query string, limit int) []model.TodoList
-  CreateList(list model.TodoList)
-  CreateTask(listId string, task model.Task)
-  UpdateTaskStatus(listId string, taskId string)
+  GetList(id string) (model.TodoList, error)
+  GetLists(query string, limit int) ([]model.TodoList, error)
+  CreateList(list model.TodoList) error
+  CreateTask(listId string, task model.Task) error
+  UpdateTaskStatus(listId string, taskId string) error
 }
