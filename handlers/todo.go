@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
+  // "fmt"
 
 	"github.com/gorilla/mux"
 
@@ -23,11 +24,27 @@ func AddList(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.R
 	return func(w http.ResponseWriter, r *http.Request) {
 		var myList model.TodoList
 
-		b, _ := ioutil.ReadAll(r.Body)
-		err := json.Unmarshal([]byte(b), &myList)
+		b, readErr := ioutil.ReadAll(r.Body)
 
-		if err == nil {
-			w.WriteHeader(http.StatusBadRequest)
+    if readErr != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      w.Write([]byte(readErr.Error()))
+			return
+    }
+
+		unmarshalErr := json.Unmarshal([]byte(b), &myList)
+
+		if unmarshalErr != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      w.Write([]byte(unmarshalErr.Error()))
+			return
+		}
+
+    createListErr := appCtn.DB.CreateList(myList)
+
+    if createListErr != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      w.Write([]byte(createListErr.Error()))
 			return
 		}
 
@@ -121,9 +138,7 @@ func SearchLists(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *ht
 		limitField := r.Form["limit"]
 
 		var searchString string
-		if len(searchStringField) == 0 {
-			searchString = ""
-		} else {
+		if len(searchStringField) != 0 {
 			searchString = searchStringField[0]
 		}
 
