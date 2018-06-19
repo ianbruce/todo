@@ -9,15 +9,12 @@ import (
 
 )
 
-type Route struct {
+type RouteData struct {
 	Name        string
 	Method      string
 	Pattern     string
 	HandlerFunc http.HandlerFunc
 }
-
-type Routes []Route
-
 
 func NewRouter(appCtx injects.AppContainer) *mux.Router {
 	router	 := mux.NewRouter().StrictSlash(true)
@@ -32,44 +29,44 @@ func NewRouter(appCtx injects.AppContainer) *mux.Router {
 	return router
 }
 
-func createRoutes(appCtx injects.AppContainer) Routes {
-	return Routes{
-		Route{
+func createRoutes(appCtx injects.AppContainer) []RouteData {
+	return []RouteData{
+		RouteData{
 			"Index",
 			"GET",
 			"/",
 			handlers.Index(&appCtx),
 		},
 
-		Route{
+		RouteData{
 			"AddList",
 			"POST",
 			"/lists",
 			handlers.AddList(&appCtx),
 		},
 
-		Route{
+		RouteData{
 			"AddTask",
 			"POST",
 			"/list/{id}/tasks",
 			handlers.AddTask(&appCtx),
 		},
 
-		Route{
+		RouteData{
 			"GetList",
 			"GET",
 			"/list/{id}",
 			handlers.GetList(&appCtx),
 		},
 
-		Route{
+		RouteData{
 			"PutTask",
 			"POST",
 			"/list/{id}/task/{taskId}/complete",
 			handlers.PutTask(&appCtx),
 		},
 
-		Route{
+		RouteData{
 			"SearchLists",
 			"GET",
 			"/lists",
