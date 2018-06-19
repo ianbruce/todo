@@ -12,3 +12,7 @@ type TodoList struct {
 	Description  string `dynamodbav:"listDescription"`
 	Tasks        []Task `dynamodbav:"tasks"`
 }
+
+type CompletedTask struct {
+  Completed    bool   `dynamodbav:"completed"`
+}
