@@ -4,6 +4,10 @@
 
 An API to create, read, and update todo lists.
 
+## Liberties taken
+
+- I didn't implement a skip feature for the searchable GET lists request, just a limit parameter
+
 ## Structure
 
 In the tradition of idiomatic Go, orthogonal concerns for REST APIs will be split into separate packages. The service will consist of:
