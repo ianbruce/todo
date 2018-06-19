@@ -84,6 +84,11 @@ func (service *DynamoTodo) CreateList(list model.TodoList) error {
 func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
   newTaskAV, marshalErr := dynamodbattribute.MarshalMap(task)
 
+  if marshalErr != nil {
+    return marshalErr
+  }
+  
+  updateExpression := "ADD completed = :newStatus"
   _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
       TableName: aws.String(service.TableName),
       Key: map[string]*dynamodb.AttributeValue{
@@ -92,11 +97,11 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
           },
       },
       ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-        ":newVal": {
-          BOOL: aws.Bool(true),
+        ":newTask": {
+          M: newTaskAV,
         },
       },
-      UpdateExpression: "ADD completed = :newStatus",
+      UpdateExpression: &updateExpression,
     },
   )
 
@@ -104,6 +109,8 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
 }
 
 func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) error {
+  updateExpression := "SET completed = :newStatus"
+
   _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
       Key: map[string]*dynamodb.AttributeValue{
           "listID": {
@@ -118,7 +125,7 @@ func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) error 
           BOOL: aws.Bool(true),
         },
       },
-      UpdateExpression: "SET completed = :newStatus",
+      UpdateExpression: &updateExpression,
     },
   )
 
