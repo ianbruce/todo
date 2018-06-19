@@ -111,23 +111,15 @@ func (service *DynamoTodo) GetLists(query string, limit int) ([]model.TodoList, 
     }
   }
 
-  fmt.Println(queryInput)
 
   lists, queryErr := service.DB.Query(queryInput)
 
   if queryErr != nil {
-    fmt.Println("query err!")
     var returnList []model.TodoList
     return returnList, queryErr
   }
 
-  fmt.Println("the items: ", lists.Items)
-
   unmarshalErr := dynamodbattribute.UnmarshalListOfMaps(lists.Items, &returnedMapList)
-
-  if unmarshalErr != nil {
-    fmt.Println(unmarshalErr)
-  }
 
   var returnList []model.TodoList
   for _, v := range returnedMapList {
@@ -148,8 +140,6 @@ func (service *DynamoTodo) CreateList(list model.TodoList) error {
   av["owner"] = &dynamodb.AttributeValue{
     S: aws.String("public"),
   }
-
-  fmt.Println(av)
 
   _, putErr := service.DB.PutItem(&dynamodb.PutItemInput{
     TableName: aws.String(service.TableName),
