@@ -41,6 +41,6 @@ func (proxy *CacheProxy) CreateTask(listId string, task model.Task) error {
   return proxy.Proxied.CreateTask(listId, task)
 }
 
-func (proxy *CacheProxy) UpdateTaskStatus(listId string, taskId string) error {
-  return proxy.Proxied.UpdateTaskStatus(listId, taskId)
+func (proxy *CacheProxy) UpdateTaskStatus(listId string, taskId string, completion bool) error {
+  return proxy.Proxied.UpdateTaskStatus(listId, taskId, completion)
 }

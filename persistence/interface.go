@@ -9,5 +9,5 @@ type TodoDatabase interface {
   GetLists(query string, limit int) ([]model.TodoList, error)
   CreateList(list model.TodoList) error
   CreateTask(listId string, task model.Task) error
-  UpdateTaskStatus(listId string, taskId string) error
+  UpdateTaskStatus(listId string, taskId string, completion bool) error
 }
