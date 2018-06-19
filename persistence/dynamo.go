@@ -116,11 +116,18 @@ func (service *DynamoTodo) GetLists(query string, limit int) ([]model.TodoList, 
   lists, queryErr := service.DB.Query(queryInput)
 
   if queryErr != nil {
+    fmt.Println("query err!")
     var returnList []model.TodoList
     return returnList, queryErr
   }
 
+  fmt.Println("the items: ", lists.Items)
+
   unmarshalErr := dynamodbattribute.UnmarshalListOfMaps(lists.Items, &returnedMapList)
+
+  if unmarshalErr != nil {
+    fmt.Println(unmarshalErr)
+  }
 
   var returnList []model.TodoList
   for _, v := range returnedMapList {
@@ -161,31 +168,20 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
 
   _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
     TableName: aws.String(service.TableName),
-    ExpressionAttributeNames: attributeNameMap,
     Key: map[string]*dynamodb.AttributeValue{
-      "#owner": {
+      "owner": {
         S: aws.String("public"),
       },
       "listID": {
           S: aws.String(listId),
       },
-      "tasks": {
-        S: aws.String("tasks"),
-      },
     },
     ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-      ":newTask": {
-        L: []*dynamodb.AttributeValue{
-          {
-            M: newTaskAV,
-          },
-        },
-      },
-      ":taskID": {
-        S: aws.String(task.ID),
+      ":newTask": &dynamodb.AttributeValue{
+        M: newTaskAV,
       },
     },
-    UpdateExpression: aws.String("SET :taskID = :newTask"),
+    UpdateExpression: aws.String(fmt.Sprintf("SET tasks.%s = :newTask", task.ID)),
     },
   )
 
@@ -202,12 +198,6 @@ func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string, comple
       "listID": {
         S: aws.String(listId),
       },
-      // "tasks": {
-      //   S: aws.String("tasks"),
-      // },
-      // taskId: {
-      //   S: aws.String(taskId),
-      // },
     },
     ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
       ":newStatus": {
