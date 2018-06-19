@@ -87,8 +87,8 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
   if marshalErr != nil {
     return marshalErr
   }
-  
-  updateExpression := "ADD completed = :newStatus"
+
+  updateExpression := "SET tasks = list_append(tasks, :newTask)"
   _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
       TableName: aws.String(service.TableName),
       Key: map[string]*dynamodb.AttributeValue{
@@ -98,7 +98,11 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
       },
       ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
         ":newTask": {
-          M: newTaskAV,
+          L: []*dynamodb.AttributeValue{
+            {
+              M: newTaskAV,
+            },
+          },
         },
       },
       UpdateExpression: &updateExpression,
