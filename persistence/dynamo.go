@@ -15,14 +15,23 @@ type DynamoTodo struct {
   TableName string
 }
 
+var attributeNameMap = map[string]*string{
+  "#owner": aws.String("owner"),
+  // "#pub": aws.String("public"),
+
+}
+
 func (service *DynamoTodo) GetList(id string) (model.TodoList, error) {
   var returnList model.TodoList
 
   dbInput := &dynamodb.GetItemInput{
     Key: map[string]*dynamodb.AttributeValue{
-        "listID": {
-            S: aws.String(id),
-        },
+      "owner": {
+        S: aws.String("public"),
+      },
+      "listID": {
+        S: aws.String(id),
+      },
     },
     TableName: aws.String(service.TableName),
   }
@@ -40,17 +49,34 @@ func (service *DynamoTodo) GetList(id string) (model.TodoList, error) {
 
 func (service *DynamoTodo) GetLists(query string, limit int) ([]model.TodoList, error) {
   var returnList []model.TodoList
-  queryInput := &dynamodb.QueryInput{
-    TableName: aws.String(service.TableName),
+
+  var queryInput *dynamodb.QueryInput
+  if query == "" {
+    queryInput = &dynamodb.QueryInput{
+      ExpressionAttributeNames: attributeNameMap,
+      ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+        ":public": {
+          S: aws.String("public"),
+        },
+      },
+      KeyConditionExpression: aws.String("#owner = :public"),
+      TableName: aws.String("todos"),
+    }
+  } else {
+    queryInput = &dynamodb.QueryInput{
+      ExpressionAttributeNames: attributeNameMap,
+      ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+        ":prefix": {
+          S: aws.String(query),
+        },
+        ":public": {
+          S: aws.String("public"),
+        },
+      },
+      KeyConditionExpression: aws.String("#owner = :public AND begins_with(listID, :prefix)"),
+      TableName: aws.String("todos"),
+    }
   }
-
-  queryInput = queryInput.SetExpressionAttributeValues(map[string]*dynamodb.AttributeValue{
-    ":prefix": {
-        S: aws.String(query),
-    },
-  })
-
-  queryInput = queryInput.SetKeyConditionExpression("begins_with(listID, :prefix)")
 
   fmt.Println(queryInput)
 
@@ -72,15 +98,20 @@ func (service *DynamoTodo) CreateList(list model.TodoList) error {
     return marhsalErr
   }
 
+  av["owner"] = &dynamodb.AttributeValue{
+    S: aws.String("public"),
+  }
+
+  fmt.Println(av)
+
   _, putErr := service.DB.PutItem(&dynamodb.PutItemInput{
-      TableName: aws.String(service.TableName),
-      Item:      av,
+    TableName: aws.String(service.TableName),
+    Item:      av,
   })
 
   return putErr
 }
 
-// TODO: implement CreateTask
 func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
   newTaskAV, marshalErr := dynamodbattribute.MarshalMap(task)
 
@@ -90,22 +121,26 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
 
   updateExpression := "SET tasks = list_append(tasks, :newTask)"
   _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
-      TableName: aws.String(service.TableName),
-      Key: map[string]*dynamodb.AttributeValue{
-          "listID": {
-              S: aws.String(listId),
-          },
+    TableName: aws.String(service.TableName),
+    ExpressionAttributeNames: attributeNameMap,
+    Key: map[string]*dynamodb.AttributeValue{
+      "#owner": {
+        S: aws.String("public"),
       },
-      ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-        ":newTask": {
-          L: []*dynamodb.AttributeValue{
-            {
-              M: newTaskAV,
-            },
+      "listID": {
+          S: aws.String(listId),
+      },
+    },
+    ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+      ":newTask": {
+        L: []*dynamodb.AttributeValue{
+          {
+            M: newTaskAV,
           },
         },
       },
-      UpdateExpression: &updateExpression,
+    },
+    UpdateExpression: &updateExpression,
     },
   )
 
@@ -113,25 +148,28 @@ func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
 }
 
 func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) error {
-  updateExpression := "SET completed = :newStatus"
-
-  _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
-      Key: map[string]*dynamodb.AttributeValue{
-          "listID": {
-              S: aws.String(listId),
-          },
-          "taskID": {
-              S: aws.String(listId),
-          },
+  updateVal, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
+    ExpressionAttributeNames: attributeNameMap,
+    Key: map[string]*dynamodb.AttributeValue{
+      "#owner": {
+        S: aws.String("public"),
       },
-      ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-        ":newStatus": {
-          BOOL: aws.Bool(true),
-        },
+      "listID": {
+        S: aws.String(listId),
       },
-      UpdateExpression: &updateExpression,
+      "taskID": {
+        S: aws.String(listId),
+      },
     },
-  )
+    // ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+    //   ":newStatus": {
+    //     BOOL: aws.Bool(true),
+    //   },
+    // },
+    UpdateExpression: aws.String("SET completed = true"),
+  },)
+
+  fmt.Println(updateVal.Attributes)
 
   return updateErr
 }
