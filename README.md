@@ -26,6 +26,6 @@ Some ideas to expand on the service:
 - **A concept of users**: The user could authenticate with the service, and would only have permission to interact with their own todo lists.
 - **Unfortunately, testing**: Missed the mark on this, was just trying to get the prototype out, which seems to fulfill the basic functions, but could use bulletproof assuredness about its correctness.
 - **Split up work**: It would be better if less work was done in the handler methods as well as the database methods. Some patterns should be found, extracted
-
+- **Encryption**: Especially if users are implemented, but this should be fairly easy to implement as an out-of-the-box middleware layer.
 ## Live instance
 Current root: http://54.210.107.201:8080
