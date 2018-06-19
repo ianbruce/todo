@@ -38,6 +38,33 @@ func AddList(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.R
 
 func AddTask(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		listID := mux.Vars(r)["id"]
+
+		rawBody, readErr := ioutil.ReadAll(r.Body)
+
+		if readErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("invalid input, object invalid"))
+			return
+		}
+
+		var taskToAdd model.Task
+		unmarshalErr := json.Unmarshal(rawBody, &taskToAdd)
+
+		if unmarshalErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("invalid input, object invalid"))
+			return
+		}
+
+		createTaskErr := appCtn.DB.CreateTask(listID, taskToAdd)
+
+		if createTaskErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(createTaskErr.Error()))
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusCreated)
 	}
@@ -58,6 +85,7 @@ func GetList(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.R
 		// if there was error on getting the list, it didn't exist
 		if getErr != nil {
 			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("couldn't find resource"))
 			return
 		}
 
@@ -69,8 +97,18 @@ func GetList(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.R
 	}
 }
 
-func PutTask(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.Request) {
+func UpdateTaskCompletion(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		listID := mux.Vars(r)["id"]
+		taskID := mux.Vars(r)["taskId"]
+
+	  updateErr := appCtn.DB.UpdateTaskStatus(listID, taskID)
+
+		if updateErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("invalid input, object invalid"))
+		}
+
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 	}
