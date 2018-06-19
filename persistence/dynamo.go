@@ -82,13 +82,21 @@ func (service *DynamoTodo) CreateList(list model.TodoList) error {
 
 // TODO: implement CreateTask
 func (service *DynamoTodo) CreateTask(listId string, task model.Task) error {
+  newTaskAV, marshalErr := dynamodbattribute.MarshalMap(task)
+
   _, updateErr := service.DB.UpdateItem(&dynamodb.UpdateItemInput{
+      TableName: aws.String(service.TableName),
       Key: map[string]*dynamodb.AttributeValue{
           "listID": {
               S: aws.String(listId),
           },
       },
-      TableName: aws.String(service.TableName),
+      ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+        ":newVal": {
+          BOOL: aws.Bool(true),
+        },
+      },
+      UpdateExpression: "ADD completed = :newStatus",
     },
   )
 
@@ -102,10 +110,15 @@ func (service *DynamoTodo) UpdateTaskStatus(listId string, taskId string) error 
               S: aws.String(listId),
           },
           "taskID": {
-              S: aws.String(taskId),
+              S: aws.String(listId),
           },
       },
-      TableName: aws.String(service.TableName),
+      ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+        ":newStatus": {
+          BOOL: aws.Bool(true),
+        },
+      },
+      UpdateExpression: "SET completed = :newStatus",
     },
   )
 
