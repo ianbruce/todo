@@ -115,15 +115,34 @@ func GetList(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.R
 }
 
 func UpdateTaskCompletion(appCtn *injects.AppContainer) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+
+  return func(w http.ResponseWriter, r *http.Request) {
+    rawBody, readErr := ioutil.ReadAll(r.Body)
+
+    if readErr != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      w.Write([]byte("invalid input, object invalid"))
+      return
+    }
+
+    var completion model.CompletedTask
+    unmarshalErr := json.Unmarshal(rawBody, &completion)
+
+    if unmarshalErr != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      w.Write([]byte("invalid input, object invalid"))
+      return
+    }
+
 		listID := mux.Vars(r)["id"]
 		taskID := mux.Vars(r)["taskId"]
 
-	  updateErr := appCtn.DB.UpdateTaskStatus(listID, taskID)
+	  updateErr := appCtn.DB.UpdateTaskStatus(listID, taskID, completion.Completed)
 
 		if updateErr != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("invalid input, object invalid"))
+			w.Write([]byte(updateErr.Error()))
+      return
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
