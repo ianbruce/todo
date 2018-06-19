@@ -24,7 +24,7 @@ Some ideas to expand on the service:
 
 - **Logging**: This could be facilitated by a layer of middleware before the router to record basic information about each request.
 - **A concept of users**: The user could authenticate with the service, and would only have permission to interact with their own todo lists.
-
+- **Unfortunately, testing**: Missed the mark on this, was just trying to get the prototype out, which seems to fulfill the basic functions, but could use bulletproof assuredness about its correctness.
 
 ## Live instance
 Live link available soon!
