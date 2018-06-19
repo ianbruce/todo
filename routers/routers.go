@@ -63,7 +63,7 @@ func createRoutes(appCtx injects.AppContainer) []RouteData {
 			"PutTask",
 			"POST",
 			"/list/{id}/task/{taskId}/complete",
-			handlers.PutTask(&appCtx),
+			handlers.UpdateTaskCompletion(&appCtx),
 		},
 
 		RouteData{
