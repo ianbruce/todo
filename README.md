@@ -28,4 +28,4 @@ Some ideas to expand on the service:
 - **Split up work**: It would be better if less work was done in the handler methods as well as the database methods. Some patterns should be found, extracted
 
 ## Live instance
-Live link available soon!
+Current root: 35.173.47.156:8080
